@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".MainActivity">
+
+    <com.google.android.material.textview.MaterialTextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:gravity="center"
+        android:text="Logs Test"
+        android:textAppearance="@style/TextAppearance.Material3.TitleMedium"
+        android:textSize="24sp" />
+
+    <Button
+        android:id="@+id/btnLogDebug"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Log DEBUG" />
+
+    <Button
+        android:id="@+id/btnLogInfo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Log INFO" />
+
+    <Button
+        android:id="@+id/btnLogWarn"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Log WARN" />
+
+    <Button
+        android:id="@+id/btnLogError"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Log ERROR" />
+
+    <Button
+        android:id="@+id/btnLogWtf"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Log WTF" />
+
+    <Button
+        android:id="@+id/btnLogErrorWithException"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Log ERROR with Exception" />
+
+</LinearLayout>
