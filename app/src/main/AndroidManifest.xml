@@ -35,19 +35,19 @@
 
         <!-- Logging Service Definition with Specified MQTT Broker Configuration -->
         <meta-data
-            android:name="com.andresuryana.monitoringlibrary.MQTT_HOST"
+            android:name="com.andresuryana.amlib.MQTT_HOST"
             android:value="192.168.137.1" />
         <meta-data
-            android:name="com.andresuryana.monitoringlibrary.MQTT_PORT"
+            android:name="com.andresuryana.amlib.MQTT_PORT"
             android:value="5672" />
         <meta-data
-            android:name="com.andresuryana.monitoringlibrary.MQTT_USER"
+            android:name="com.andresuryana.amlib.MQTT_USER"
             android:value="guest" />
         <meta-data
-            android:name="com.andresuryana.monitoringlibrary.MQTT_PASS"
+            android:name="com.andresuryana.amlib.MQTT_PASS"
             android:value="guest" />
         <meta-data
-            android:name="com.andresuryana.monitoringlibrary.MQTT_EXCHANGE"
+            android:name="com.andresuryana.amlib.MQTT_EXCHANGE"
             android:value="monitoring" />
 
         <!-- Context Provider Definition -->

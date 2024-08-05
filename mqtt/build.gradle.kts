@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.andresuryana.monitoringlibrary.mqtt"
+    namespace = "com.andresuryana.amlib.mqtt"
     compileSdk = 34
 
     defaultConfig {

@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.andresuryana.monitoringlibrary"
+    namespace = "com.andresuryana.amlib"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.andresuryana.monitoringlibrary"
+        applicationId = "com.andresuryana.amlib.demo"
         minSdk = 21
         targetSdk = 34
         versionCode = 1

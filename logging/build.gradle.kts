@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.andresuryana.monitoringlibrary.logging"
+    namespace = "com.andresuryana.amlib.logging"
     compileSdk = 34
 
     defaultConfig {

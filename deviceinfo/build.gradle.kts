@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.andresuryana.monitoringlibrary.deviceinfo"
+    namespace = "com.andresuryana.amlib.deviceinfo"
     compileSdk = 34
 
     defaultConfig {
