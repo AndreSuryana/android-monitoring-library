@@ -37,8 +37,8 @@ android {
 
 dependencies {
 
-    implementation(project(":common"))
-    implementation(project(":mqtt"))
+    implementation(project(":core"))
+    implementation(project(":core:mqtt"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

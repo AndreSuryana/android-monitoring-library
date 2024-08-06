@@ -1,6 +1,6 @@
 package com.andresuryana.amlib.deviceinfo
 
-import com.andresuryana.amlib.common.data.ResourceUsage
+import com.andresuryana.amlib.core.data.ResourceUsage
 
 data class DeviceMetrics(
     val batteryPercentage: ResourceUsage<Int>,

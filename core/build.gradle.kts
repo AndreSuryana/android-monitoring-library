@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.andresuryana.amlib.deviceinfo"
+    namespace = "com.andresuryana.amlib.core"
     compileSdk = AmlibConfiguration.compileSdk
 
     defaultConfig {
@@ -36,8 +36,6 @@ android {
 }
 
 dependencies {
-
-    implementation(project(":core"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

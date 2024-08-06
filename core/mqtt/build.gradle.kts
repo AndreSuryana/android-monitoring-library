@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.andresuryana.amlib.deviceinfo"
+    namespace = "com.andresuryana.amlib.mqtt"
     compileSdk = AmlibConfiguration.compileSdk
 
     defaultConfig {
@@ -45,4 +45,7 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // RabbitMQ Client
+    implementation(libs.rabbitmq.client)
 }

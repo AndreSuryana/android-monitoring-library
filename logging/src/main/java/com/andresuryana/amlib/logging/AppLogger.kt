@@ -3,7 +3,7 @@ package com.andresuryana.amlib.logging
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.andresuryana.amlib.common.prefs.SharedPreferencesHelper
+import com.andresuryana.amlib.core.prefs.SharedPreferencesHelper
 import com.andresuryana.amlib.logging.service.LoggingService
 import java.lang.ref.WeakReference
 

@@ -5,7 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.IBinder
 import android.util.Log
-import com.andresuryana.amlib.common.IMessagingClient
+import com.andresuryana.amlib.core.IMessagingClient
 import com.andresuryana.amlib.logging.LogLevel.Companion.isLogLevelSupported
 import com.andresuryana.amlib.mqtt.RabbitMQClient
 import kotlinx.coroutines.CoroutineScope

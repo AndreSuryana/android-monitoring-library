@@ -7,8 +7,8 @@ import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
 import androidx.annotation.RequiresApi
-import com.andresuryana.amlib.common.IDeviceInfoCollector
-import com.andresuryana.amlib.common.data.ResourceUsage
+import com.andresuryana.amlib.core.IDeviceInfoCollector
+import com.andresuryana.amlib.core.data.ResourceUsage
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
