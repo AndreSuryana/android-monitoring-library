@@ -8,7 +8,9 @@ android {
     compileSdk = AmlibConfiguration.compileSdk
 
     defaultConfig {
+        group = AmlibConfiguration.amlibGroup
         version = AmlibConfiguration.amlibVersion
+
         minSdk = AmlibConfiguration.minSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
