@@ -5,10 +5,11 @@ plugins {
 
 android {
     namespace = "com.andresuryana.amlib.common"
-    compileSdk = 34
+    compileSdk = AmlibConfiguration.compileSdk
 
     defaultConfig {
-        minSdk = 21
+        version = AmlibConfiguration.amlibVersion
+        minSdk = AmlibConfiguration.minSdk
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
