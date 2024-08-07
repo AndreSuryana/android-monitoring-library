@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.andresuryana.amlib.logging"
+    namespace = "com.andresuryana.amlib.core"
     compileSdk = AmlibConfiguration.compileSdk
 
     defaultConfig {
@@ -43,14 +43,15 @@ android {
 
 dependencies {
 
-    implementation(project(":core"))
-
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+
+    // RabbitMQ Client
+    implementation(libs.rabbitmq.client)
 
     // Dagger Hilt
     implementation(libs.hilt.android)

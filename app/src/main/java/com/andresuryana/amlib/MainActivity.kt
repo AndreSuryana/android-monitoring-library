@@ -6,7 +6,9 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.andresuryana.amlib.databinding.ActivityMainBinding
 import com.andresuryana.amlib.logging.AppLogger
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
