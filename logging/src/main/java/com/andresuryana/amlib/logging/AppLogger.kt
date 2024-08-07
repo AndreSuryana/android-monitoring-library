@@ -3,7 +3,7 @@ package com.andresuryana.amlib.logging
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import com.andresuryana.amlib.core.prefs.SharedPreferencesHelper
+import com.andresuryana.amlib.logging.prefs.LoggingSharedPreferences
 import com.andresuryana.amlib.logging.service.LoggingService
 import java.lang.ref.WeakReference
 
@@ -19,7 +19,7 @@ object AppLogger {
     @JvmStatic
     fun setDeviceId(deviceId: String) {
         contextRef?.get()?.let { context ->
-            val prefs = SharedPreferencesHelper.getInstance(context)
+            val prefs = LoggingSharedPreferences.getInstance(context)
             prefs.deviceId = deviceId
         }
     }
@@ -27,7 +27,7 @@ object AppLogger {
     @JvmStatic
     fun getDeviceId(): String? {
         contextRef?.get()?.let { context ->
-            val prefs = SharedPreferencesHelper.getInstance(context)
+            val prefs = LoggingSharedPreferences.getInstance(context)
             return prefs.deviceId
         }
         return null
@@ -36,7 +36,7 @@ object AppLogger {
     @JvmStatic
     fun setLogLevel(level: LogLevel) {
         contextRef?.get()?.let { context ->
-            val prefs = SharedPreferencesHelper.getInstance(context)
+            val prefs = LoggingSharedPreferences.getInstance(context)
             prefs.logLevelPriority = level.priority
         }
     }
@@ -44,7 +44,7 @@ object AppLogger {
     @JvmStatic
     fun getLogLevel(): LogLevel? {
         contextRef?.get()?.let { context ->
-            val prefs = SharedPreferencesHelper.getInstance(context)
+            val prefs = LoggingSharedPreferences.getInstance(context)
             return LogLevel.fromPriority(prefs.logLevelPriority)
         }
         return LogLevel.VERBOSE
@@ -53,7 +53,7 @@ object AppLogger {
     @JvmStatic
     fun setConsoleLogging(enable: Boolean) {
         contextRef?.get()?.let { context ->
-            val prefs = SharedPreferencesHelper.getInstance(context)
+            val prefs = LoggingSharedPreferences.getInstance(context)
             prefs.isConsoleLogging = enable
         }
     }
@@ -61,7 +61,7 @@ object AppLogger {
     @JvmStatic
     fun isConsoleLogging(): Boolean {
         contextRef?.get()?.let { context ->
-            val prefs = SharedPreferencesHelper.getInstance(context)
+            val prefs = LoggingSharedPreferences.getInstance(context)
             return prefs.isConsoleLogging
         }
         return false
@@ -138,6 +138,10 @@ object AppLogger {
     }
 
     private fun log(level: LogLevel, tag: String, message: String, tr: Throwable? = null) {
+        // Check context reference first
+        val context = contextRef?.get()
+            ?: throw IllegalStateException("Application context not initialized. Make sure '${ContextProvider::class.java.name}' is registered in your manifest as provider.")
+
         // Check if the log level is enabled
         if (!isLoggable(level)) return
 
@@ -158,8 +162,6 @@ object AppLogger {
         }
 
         // Send log to service
-        val context = contextRef?.get()
-            ?: throw IllegalStateException("Application context not initialized. Make sure LoggingService is registered in your manifest.")
         val intent = Intent(context, LoggingService::class.java).apply {
             putExtra(LoggingService.EXTRA_TAG, tag)
             putExtra(LoggingService.EXTRA_LEVEL, level.getShortLabel())

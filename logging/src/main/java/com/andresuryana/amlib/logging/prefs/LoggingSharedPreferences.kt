@@ -1,9 +1,9 @@
-package com.andresuryana.amlib.core.prefs
+package com.andresuryana.amlib.logging.prefs
 
 import android.content.Context
 import android.content.SharedPreferences
 
-class SharedPreferencesHelper private constructor(context: Context) {
+class LoggingSharedPreferences(context: Context) {
 
     private val prefs: SharedPreferences =
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -20,7 +20,6 @@ class SharedPreferencesHelper private constructor(context: Context) {
         get() = prefs.getBoolean(KEY_CONSOLE_LOGGING, false)
         set(value) = prefs.edit().putBoolean(KEY_CONSOLE_LOGGING, value).apply()
 
-
     companion object {
         const val PREFS_NAME = "monitoring_lib_prefs"
 
@@ -29,11 +28,11 @@ class SharedPreferencesHelper private constructor(context: Context) {
         const val KEY_CONSOLE_LOGGING = "console_logging"
 
         @Volatile
-        private var INSTANCE: SharedPreferencesHelper? = null
+        private var INSTANCE: LoggingSharedPreferences? = null
 
-        fun getInstance(context: Context): SharedPreferencesHelper =
+        fun getInstance(context: Context): LoggingSharedPreferences =
             INSTANCE ?: synchronized(this) {
-                INSTANCE ?: SharedPreferencesHelper(context).also { INSTANCE = it }
+                INSTANCE ?: LoggingSharedPreferences(context).also { INSTANCE = it }
             }
     }
 }

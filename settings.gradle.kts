@@ -22,6 +22,5 @@ dependencyResolutionManagement {
 rootProject.name = "Android Monitoring Library"
 include(":app")
 include(":core")
-include(":core:mqtt")
 include(":logging")
 include(":deviceinfo")

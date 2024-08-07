@@ -1,15 +1,13 @@
-package com.andresuryana.amlib.mqtt
+package com.andresuryana.amlib.core.client.mqtt
 
 import android.util.Log
-import com.andresuryana.amlib.core.listener.OnSubscribeTopicListener
 import com.andresuryana.amlib.core.IMessagingClient
+import com.andresuryana.amlib.core.listener.OnSubscribeTopicListener
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -29,18 +27,15 @@ class RabbitMQClient(
 
     private val lock = ReentrantLock()
 
-    init {
-        CoroutineScope(Dispatchers.IO).launch {
-            connect()
-        }
-    }
-
     @Throws(Exception::class)
     override suspend fun connect() = withContext(Dispatchers.IO) {
         // Initialize the connection and channel
         lock.withLock {
             if (connection == null || connection?.isOpen == false) {
-                Log.d(TAG, "Connecting to RabbitMQ server...\nHost: $host\nPort: $port\nUsername: $username\nPassword: $password\nExchange: $exchange")
+                Log.d(
+                    TAG,
+                    "Connecting to RabbitMQ server...\nHost: $host\nPort: $port\nUsername: $username\nPassword: $password\nExchange: $exchange"
+                )
                 connection = ConnectionFactory().apply {
                     host = this@RabbitMQClient.host
                     port = this@RabbitMQClient.port
@@ -57,48 +52,59 @@ class RabbitMQClient(
         }
     }
 
-    override suspend fun publish(topic: String, payload: String): Boolean = withContext(Dispatchers.IO) {
-        if (channel == null) {
-            Log.e(TAG, "Failed to publish topic '${topic}' with payload '${payload}'. RabbitMQ channel is not initialized.")
-            return@withContext false
+    override suspend fun publish(topic: String, payload: String): Boolean =
+        withContext(Dispatchers.IO) {
+            if (channel == null) {
+                Log.e(
+                    TAG,
+                    "Failed to publish topic '${topic}' with payload '${payload}'. RabbitMQ channel is not initialized."
+                )
+                return@withContext false
+            }
+
+            return@withContext try {
+                val props = BasicProperties.Builder().apply {
+                    deliveryMode(2) // Persistent message
+                }.build()
+                channel?.basicPublish(exchange, topic, props, payload.toByteArray())
+                Log.d(TAG, "Successfully published topic '${topic}' with payload '${payload}'.")
+                true
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to publish topic '${topic}' with payload '${payload}'.", e)
+                false
+            }
         }
 
-        return@withContext try {
-            val props = BasicProperties.Builder().apply {
-                deliveryMode(2) // Persistent message
-            }.build()
-            channel?.basicPublish(exchange, topic, props, payload.toByteArray())
-            Log.d(TAG, "Successfully published topic '${topic}' with payload '${payload}'.")
-            true
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to publish topic '${topic}' with payload '${payload}'.", e)
-            false
-        }
-    }
+    override suspend fun subscribe(topic: String, listener: OnSubscribeTopicListener) =
+        withContext(Dispatchers.IO) {
+            if (channel == null) {
+                Log.e(
+                    TAG,
+                    "Failed to subscribe to topic '${topic}'. RabbitMQ channel is not initialized."
+                )
+                return@withContext
+            }
 
-    override suspend fun subscribe(topic: String, listener: OnSubscribeTopicListener) = withContext(Dispatchers.IO) {
-        if (channel == null) {
-            Log.e(TAG, "Failed to subscribe to topic '${topic}'. RabbitMQ channel is not initialized.")
-            return@withContext
+            try {
+                channel?.basicConsume(topic, true,
+                    { _, delivery ->
+                        listener.onReceive(topic, String(delivery.body))
+                        Log.d(TAG, "Received message on topic '${topic}': ${String(delivery.body)}")
+                    }, { _ ->
+                        listener.onCancel()
+                        Log.w(TAG, "Consumer cancelled for topic '${topic}'.")
+                    })
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to subscribe to topic '${topic}'.", e)
+            }
         }
-
-        try {
-            channel?.basicConsume(topic, true,
-                { _, delivery ->
-                    listener.onReceive(topic, String(delivery.body))
-                    Log.d(TAG, "Received message on topic '${topic}': ${String(delivery.body)}")
-                }, { _ ->
-                    listener.onCancel()
-                    Log.w(TAG, "Consumer cancelled for topic '${topic}'.")
-                })
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to subscribe to topic '${topic}'.", e)
-        }
-    }
 
     override suspend fun unsubscribe(topic: String): Boolean = withContext(Dispatchers.IO) {
         if (channel == null) {
-            Log.e(TAG, "Failed to subscribe to topic '${topic}'. RabbitMQ channel is not initialized.")
+            Log.e(
+                TAG,
+                "Failed to subscribe to topic '${topic}'. RabbitMQ channel is not initialized."
+            )
             return@withContext false
         }
 
