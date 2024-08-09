@@ -18,12 +18,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.LinkedList
 import java.util.Locale
-import java.util.Queue
 import java.util.TimeZone
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.zip.GZIPOutputStream
 
 /**
  * A service that manages log operations, including handling log messages,
@@ -32,12 +33,17 @@ import java.util.TimeZone
  */
 class LoggingService : Service() {
 
-    private lateinit var messageClient: IMessagingClient
+    // Lazy initialization of the IMessagingClient instance
+    private val messageClient: IMessagingClient by lazy {
+        CoreDependencies.getInstance(context = this.applicationContext)
+            .provideIMessagingClient()
+    }
 
     private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
     private var deviceId: String? = null
 
-    private val logQueue: Queue<String> = LinkedList()
+    private val logQueue = ConcurrentLinkedQueue<String>()
+    private val retryQueue = ConcurrentLinkedQueue<List<String>>()
     private var isConnected = false
 
     private val connectivityManager by lazy {
@@ -48,20 +54,19 @@ class LoggingService : Service() {
 
     /**
      * Called when the service is first created.
-     * Registers network callbacks and initiates connection to the server.
+     * Registers network callbacks and initiates batch processing of log messages.
      */
     override fun onCreate() {
         super.onCreate()
-
-        // Initialize dependencies
-        messageClient = CoreDependencies.getInstance(context = this.applicationContext)
-            .provideIMessagingClient()
 
         // Register network callback to monitor connectivity changes
         registerNetworkCallback()
 
         // Launch coroutine to connect to the server when the service starts
         coroutineScope.launch { connectToServer() }
+
+        // Start batching logs
+        coroutineScope.launch { processLogQueue() }
     }
 
     /**
@@ -82,20 +87,19 @@ class LoggingService : Service() {
 
         // Validate the log level to ensure it is supported
         if (!isLogLevelSupported(level)) {
-            throw IllegalArgumentException("Invalid log level: $level")
+            Log.e(TAG, "Invalid log level: $level")
+            return START_STICKY
         }
 
         // Validate that a device ID is provided
         if (deviceId.isNullOrEmpty()) {
-            throw IllegalArgumentException("Device ID cannot be empty")
+            Log.e(TAG, "Device ID cannot be empty")
+            return START_STICKY
         }
 
-        // Format the log message with timestamp and timezone
+        // Format and add the log message to the queue
         val logMessage = formatLogMessage(level, tag, message)
-
-        // Add log message to queue and process it
         logQueue.add(logMessage)
-        coroutineScope.launch { processLogQueue() }
 
         return START_STICKY
     }
@@ -131,7 +135,8 @@ class LoggingService : Service() {
         var timestamp = sdf.format(date)
         val timeZone = TimeZone.getDefault()
         if (timeZone != null) {
-            val timeZoneDisplayName = timeZone.getDisplayName(timeZone.inDaylightTime(date), TimeZone.SHORT, Locale.US)
+            val timeZoneDisplayName =
+                timeZone.getDisplayName(timeZone.inDaylightTime(date), TimeZone.SHORT, Locale.US)
             timestamp = "$timestamp $timeZoneDisplayName"
         }
         return "$timestamp [$level] $tag: $message"
@@ -142,9 +147,10 @@ class LoggingService : Service() {
      */
     private suspend fun connectToServer() {
         try {
-            messageClient.connect() // Attempt to connect to the server
+            if (!messageClient.isConnected()) {
+                messageClient.connect() // Attempt to connect to the server
+            }
             isConnected = true
-            processLogQueue() // Start processing the log queue
         } catch (e: Exception) {
             Log.e(TAG, "Error connecting to server: ${e.message}\n${Log.getStackTraceString(e)}")
         }
@@ -154,11 +160,15 @@ class LoggingService : Service() {
      * Disconnects from the messaging server.
      */
     private fun disconnectFromServer() {
-        try {
-            messageClient.disconnect() // Attempt to disconnect from the server
-            isConnected = false
-        } catch (e: Exception) {
-            Log.e(TAG, "Error disconnecting from server: ${e.message}")
+        coroutineScope.launch {
+            try {
+                if (messageClient.isConnected()) {
+                    messageClient.disconnect() // Attempt to disconnect from the server
+                }
+                isConnected = false
+            } catch (e: Exception) {
+                Log.e(TAG, "Error disconnecting from server: ${e.message}")
+            }
         }
     }
 
@@ -167,43 +177,81 @@ class LoggingService : Service() {
      * Retries publishing up to a maximum number of times if it fails.
      */
     private suspend fun processLogQueue() {
-        // If not connected, there's no point in processing the queue
-        if (!isConnected) return
+        while (true) {
+            // Wait for a specified interval before processing the log queue
+            delay(BATCH_INTERVAL)
 
-        // Continue processing while there are log messages in the queue
-        while (logQueue.isNotEmpty()) {
-            val logMessage = logQueue.poll() ?: continue // Retrieve and remove the next log message from the queue
-            var retryCount = 0 // Initialize retry count for this message
-            var success = false // Flag to track if the message was successfully published
+            // Check if the connection is available and the queue is not empty
+            if (isConnected && logQueue.isNotEmpty()) {
+                // Create a batch of log messages
+                val batch = mutableListOf<String>()
+                while (batch.size < BATCH_SIZE && logQueue.isNotEmpty()) {
+                    logQueue.poll()?.let { batch.add(it) }
+                }
 
-            // Retry publishing the log message up to a maximum number of times for each log message
-            while (retryCount < MAX_RETRIES && !success) {
-                try {
-                    // Ensure the message client is connected before attempting to publish
-                    if (!messageClient.isConnected()) {
-                        messageClient.connect()
+                if (batch.isNotEmpty()) {
+                    if (!processBatch(batch)) {
+                        retryQueue.add(batch) // Add failed batch to retry queue
                     }
-                    // Define the routing key for the message
-                    val routingKey = "log.$deviceId"
+                }
+            }
 
-                    // Attempt to publish the log message
-                    messageClient.publish(routingKey, logMessage)
-                    success = true // Mark the message as successfully published
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error publishing log message: ${e.message}\n${Log.getStackTraceString(e)}")
+            // Retry failed batches
+            retryFailedBatches()
+        }
+    }
 
-                    // If publishing fails, re-add the log message to the queue for retry
-                    logQueue.add(logMessage)
-                    Log.d(TAG, "Retrying log message. Attempt ${retryCount + 1} of $MAX_RETRIES")
+    /**
+     * Processes a batch of log messages and publishes them to the server.
+     */
+    private suspend fun processBatch(batch: List<String>): Boolean {
+        var retryCount = 0
+        var success = false
 
-                    // Increment the retry count for this message
-                    retryCount++
+        while (retryCount < MAX_RETRIES && !success) {
+            try {
+                if (!messageClient.isConnected()) {
+                    messageClient.connect()
+                }
 
-                    // Wait for a specified interval before retrying to avoid overwhelming the server or network
-                    delay(RETRY_INTERVAL)
+                val routingKey = "log.$deviceId"
+                messageClient.publish(routingKey, compressLogs(batch))
+                success = true
+            } catch (e: Exception) {
+                Log.e(
+                    TAG,
+                    "Error publishing log batch: ${e.message}\n${Log.getStackTraceString(e)}"
+                )
+                retryCount++
+                delay(RETRY_INTERVAL)
+            }
+        }
+
+        return success
+    }
+
+    /**
+     * Retries failed batches from the retry queue.
+     */
+    private suspend fun retryFailedBatches() {
+        while (retryQueue.isNotEmpty()) {
+            retryQueue.poll()?.let { batch ->
+                if (!processBatch(batch)) {
+                    retryQueue.add(batch) // Add failed batch back to retry queue
                 }
             }
         }
+    }
+
+    /**
+     * Compresses a list of log messages using GZIP compression.
+     */
+    private fun compressLogs(logs: List<String>): String {
+        val output = ByteArrayOutputStream()
+        GZIPOutputStream(output).bufferedWriter().use { writer ->
+            logs.forEach { writer.write(it); writer.write("\n") }
+        }
+        return output.toString("ISO-8859-1")
     }
 
     /**
@@ -219,20 +267,19 @@ class LoggingService : Service() {
             .build()
 
         // Register a network callback to handle connectivity changes
-        connectivityManager.registerNetworkCallback(networkRequest, object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                super.onAvailable(network)
-                isConnected = true
+        connectivityManager.registerNetworkCallback(
+            networkRequest,
+            object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    super.onAvailable(network)
+                    isConnected = true
+                }
 
-                // Process the log queue when network becomes available
-                coroutineScope.launch { processLogQueue() }
-            }
-
-            override fun onLost(network: Network) {
-                super.onLost(network)
-                isConnected = false
-            }
-        })
+                override fun onLost(network: Network) {
+                    super.onLost(network)
+                    isConnected = false
+                }
+            })
     }
 
     companion object {
@@ -241,6 +288,9 @@ class LoggingService : Service() {
 
         private const val RETRY_INTERVAL = 5000L // 5 seconds between retries
         private const val MAX_RETRIES = 3 // Maximum number of retries for each log message
+
+        private const val BATCH_INTERVAL = 10000L // Time interval to send the batch
+        private const val BATCH_SIZE = 20 // Maximum number of messages in the batch
 
         const val EXTRA_TAG = "tag"
         const val EXTRA_LEVEL = "level"
