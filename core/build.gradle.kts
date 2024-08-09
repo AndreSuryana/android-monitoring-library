@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     id("kotlin-kapt")
     alias(libs.plugins.dagger.hilt)
+    `maven-publish`
 }
 
 android {
@@ -28,10 +29,12 @@ android {
             )
         }
     }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
+
     kotlinOptions {
         jvmTarget = "1.8"
     }
@@ -39,17 +42,13 @@ android {
     hilt {
         enableAggregatingTask = false
     }
+
+    publishing {
+        singleVariant("release")
+    }
 }
 
 dependencies {
-
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-
     // RabbitMQ Client
     implementation(libs.rabbitmq.client)
 
@@ -61,4 +60,22 @@ dependencies {
 // Allow references to generated code
 kapt {
     correctErrorTypes = true
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = AmlibConfiguration.amlibGroup
+            artifactId = project.name
+            version = AmlibConfiguration.amlibVersion
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
 }
