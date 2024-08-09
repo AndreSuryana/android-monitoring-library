@@ -12,8 +12,6 @@ import kotlinx.coroutines.withContext
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-private const val DEFAULT_EXCHANGE_NAME = "libs.monitoring"
-
 class RabbitMQClient(
     private val host: String? = ConnectionFactory.DEFAULT_HOST,
     private val port: Int = ConnectionFactory.DEFAULT_AMQP_PORT,
@@ -139,5 +137,7 @@ class RabbitMQClient(
 
     companion object {
         private val TAG: String = RabbitMQClient::class.java.simpleName
+
+        private const val DEFAULT_EXCHANGE_NAME = "libs.monitoring"
     }
 }

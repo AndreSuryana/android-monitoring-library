@@ -1,8 +1,6 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.kotlin.android)
-    id("kotlin-kapt")
-    alias(libs.plugins.dagger.hilt)
     `maven-publish`
 }
 
@@ -39,27 +37,17 @@ android {
         jvmTarget = "1.8"
     }
 
-    hilt {
-        enableAggregatingTask = false
-    }
-
     publishing {
         singleVariant("release")
     }
 }
 
 dependencies {
+    // Kotlin KTX
+    implementation(libs.androidx.core.ktx)
+
     // RabbitMQ Client
     implementation(libs.rabbitmq.client)
-
-    // Dagger Hilt
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.android.compiler)
-}
-
-// Allow references to generated code
-kapt {
-    correctErrorTypes = true
 }
 
 publishing {

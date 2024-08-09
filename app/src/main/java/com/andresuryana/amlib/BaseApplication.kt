@@ -4,9 +4,7 @@ import android.app.Application
 import android.util.Log
 import com.andresuryana.amlib.logging.AppLogger
 import com.andresuryana.amlib.logging.LogLevel
-import dagger.hilt.android.HiltAndroidApp
 
-@HiltAndroidApp
 class BaseApplication : Application() {
 
     override fun onCreate() {
