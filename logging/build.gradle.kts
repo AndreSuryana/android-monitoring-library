@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.jetbrains.kotlin.android)
     id("kotlin-kapt")
     alias(libs.plugins.dagger.hilt)
+    `maven-publish`
 }
 
 android {
@@ -39,18 +40,15 @@ android {
     hilt {
         enableAggregatingTask = false
     }
+
+    publishing {
+        singleVariant("release")
+    }
 }
 
 dependencies {
-
-    implementation(project(":core"))
-
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    // Core Module
+    api(project(":core"))
 
     // Dagger Hilt
     implementation(libs.hilt.android)
@@ -60,4 +58,22 @@ dependencies {
 // Allow references to generated code
 kapt {
     correctErrorTypes = true
+}
+
+publishing {
+    publications {
+        register<MavenPublication>("release") {
+            groupId = AmlibConfiguration.amlibGroup
+            artifactId = project.name
+            version = AmlibConfiguration.amlibVersion
+
+            afterEvaluate {
+                from(components["release"])
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+    }
 }

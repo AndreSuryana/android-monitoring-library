@@ -5,6 +5,18 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 
+/**
+ * A ContentProvider implementation that initializes the application logger when the provider is created.
+ *
+ * This provider serves as an entry point for initializing the logging system within the application. It is
+ * designed to be registered in the application's manifest to ensure that logging is set up as soon as the application
+ * starts. The provider performs the following tasks:
+ *
+ * - **Initialization**: When the provider is created, it initializes the {@link AppLogger} with the application context.
+ *
+ * The other methods (query, getType, insert, delete, update) are not implemented and return default values. They
+ * can be overridden if needed for specific use cases.
+ */
 class ContextProvider : ContentProvider() {
 
     override fun onCreate(): Boolean {

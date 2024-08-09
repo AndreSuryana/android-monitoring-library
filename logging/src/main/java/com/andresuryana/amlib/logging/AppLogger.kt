@@ -7,15 +7,35 @@ import com.andresuryana.amlib.logging.prefs.LoggingSharedPreferences
 import com.andresuryana.amlib.logging.service.LoggingService
 import java.lang.ref.WeakReference
 
+/**
+ * A utility object for logging within the application. It provides methods for initializing the logger,
+ * configuring logging preferences, and sending log messages of various levels (VERBOSE, DEBUG, INFO, WARN, ERROR, ASSERT).
+ *
+ * This object allows you to:
+ * - Initialize the logger with the application context.
+ * - Set and get logging preferences such as device ID, log level, and console logging.
+ * - Log messages with different log levels and optionally attach stack traces for exceptions.
+ * - Ensure that log messages are sent to a logging service if the application context is initialized.
+ */
 object AppLogger {
 
     @Volatile
     private var contextRef: WeakReference<Context>? = null
 
+    /**
+     * Initializes the logger with the given application context.
+     *
+     * @param context The application context to be used for logging operations.
+     */
     fun initialize(context: Context) {
         contextRef = WeakReference(context.applicationContext)
     }
 
+    /**
+     * Sets the device ID for logging.
+     *
+     * @param deviceId The device ID to be set.
+     */
     @JvmStatic
     fun setDeviceId(deviceId: String) {
         contextRef?.get()?.let { context ->
@@ -24,6 +44,11 @@ object AppLogger {
         }
     }
 
+    /**
+     * Retrieves the currently set device ID.
+     *
+     * @return The current device ID, or null if not set.
+     */
     @JvmStatic
     fun getDeviceId(): String? {
         contextRef?.get()?.let { context ->
@@ -33,6 +58,11 @@ object AppLogger {
         return null
     }
 
+    /**
+     * Sets the log level for the logger.
+     *
+     * @param level The log level to be set.
+     */
     @JvmStatic
     fun setLogLevel(level: LogLevel) {
         contextRef?.get()?.let { context ->
@@ -41,6 +71,11 @@ object AppLogger {
         }
     }
 
+    /**
+     * Retrieves the current log level.
+     *
+     * @return The current log level, or VERBOSE if not set.
+     */
     @JvmStatic
     fun getLogLevel(): LogLevel? {
         contextRef?.get()?.let { context ->
@@ -50,6 +85,11 @@ object AppLogger {
         return LogLevel.VERBOSE
     }
 
+    /**
+     * Enables or disables console logging.
+     *
+     * @param enable True to enable console logging, false to disable.
+     */
     @JvmStatic
     fun setConsoleLogging(enable: Boolean) {
         contextRef?.get()?.let { context ->
@@ -58,6 +98,11 @@ object AppLogger {
         }
     }
 
+    /**
+     * Checks if console logging is enabled.
+     *
+     * @return True if console logging is enabled, false otherwise.
+     */
     @JvmStatic
     fun isConsoleLogging(): Boolean {
         contextRef?.get()?.let { context ->
@@ -67,76 +112,174 @@ object AppLogger {
         return false
     }
 
+    /**
+     * Logs a VERBOSE message.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     */
     @JvmStatic
     fun v(tag: String, message: String) {
         log(LogLevel.VERBOSE, tag, message)
     }
 
+    /**
+     * Logs a VERBOSE message with an exception.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     * @param tr The exception to be logged.
+     */
     @JvmStatic
     fun v(tag: String, message: String, tr: Throwable) {
         log(LogLevel.VERBOSE, tag, "$message\n${Log.getStackTraceString(tr)}")
     }
 
+    /**
+     * Logs a DEBUG message.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     */
     @JvmStatic
     fun d(tag: String, message: String) {
         log(LogLevel.DEBUG, tag, message)
     }
 
+    /**
+     * Logs a DEBUG message with an exception.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     * @param tr The exception to be logged.
+     */
     @JvmStatic
     fun d(tag: String, message: String, tr: Throwable) {
         log(LogLevel.DEBUG, tag, "$message\n${Log.getStackTraceString(tr)}")
     }
 
+    /**
+     * Logs a INFO message.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     */
     @JvmStatic
     fun i(tag: String, message: String) {
         log(LogLevel.INFO, tag, message)
     }
 
+    /**
+     * Logs a INFO message with an exception.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     * @param tr The exception to be logged.
+     */
     @JvmStatic
     fun i(tag: String, message: String, tr: Throwable) {
         log(LogLevel.INFO, tag, "$message\n${Log.getStackTraceString(tr)}")
     }
 
+    /**
+     * Logs a WARNING message.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     */
     @JvmStatic
     fun w(tag: String, message: String) {
         log(LogLevel.WARN, tag, message)
     }
 
+    /**
+     * Logs a WARNING message with an exception.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     * @param tr The exception to be logged.
+     */
     @JvmStatic
     fun w(tag: String, message: String, tr: Throwable) {
         log(LogLevel.WARN, tag, "$message\n${Log.getStackTraceString(tr)}")
     }
 
+    /**
+     * Logs a WARNING message with an exception.
+     *
+     * @param tag The tag for the log message.
+     * @param tr The exception to be logged.
+     */
     @JvmStatic
     fun w(tag: String, tr: Throwable) {
         log(LogLevel.WARN, tag, Log.getStackTraceString(tr))
     }
 
+    /**
+     * Logs a ERROR message.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     */
     @JvmStatic
     fun e(tag: String, message: String) {
         log(LogLevel.ERROR, tag, message)
     }
 
+    /**
+     * Logs a ERROR message with an exception.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     * @param tr The exception to be logged.
+     */
     @JvmStatic
     fun e(tag: String, message: String, tr: Throwable) {
         log(LogLevel.ERROR, tag, "$message\n${Log.getStackTraceString(tr)}")
     }
 
+    /**
+     * Logs a WTF (What a Terrible Failure) message.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     */
     @JvmStatic
     fun wtf(tag: String, message: String) {
         log(LogLevel.ASSERT, tag, message)
     }
 
+    /**
+     * Logs a WTF (What a Terrible Failure) message.
+     *
+     * @param tag The tag for the log message.
+     * @param tr The exception to be logged.
+     */
     @JvmStatic
     fun wtf(tag: String, tr: Throwable) {
         log(LogLevel.ASSERT, tag, Log.getStackTraceString(tr))
     }
 
+    /**
+     * Logs a WTF (What a Terrible Failure) message.
+     *
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     * @param tr The exception to be logged.
+     */
     @JvmStatic
     fun wtf(tag: String, message: String, tr: Throwable) {
         log(LogLevel.ASSERT, tag, "$message\n${Log.getStackTraceString(tr)}")
     }
 
+    /**
+     * Logs a message with the specified log level.
+     *
+     * @param level The log level.
+     * @param tag The tag for the log message.
+     * @param message The message to be logged.
+     * @param tr Optional exception to be logged.
+     */
     private fun log(level: LogLevel, tag: String, message: String, tr: Throwable? = null) {
         // Check context reference first
         val context = contextRef?.get()
@@ -174,6 +317,12 @@ object AppLogger {
         context.startService(intent)
     }
 
+    /**
+     * Determines if the given log level should be logged based on the current log level setting.
+     *
+     * @param level The log level to check.
+     * @return True if the level is loggable, false otherwise.
+     */
     private fun isLoggable(level: LogLevel): Boolean {
         val logLevel = getLogLevel() ?: return false
         return level.priority >= logLevel.priority

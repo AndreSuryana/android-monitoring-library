@@ -1,5 +1,3 @@
-import org.gradle.api.JavaVersion
-
 @Suppress("ConstPropertyName")
 object AmlibConfiguration {
     const val amlibGroup = "com.andresuryana.amlib"
