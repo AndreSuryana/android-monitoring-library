@@ -10,8 +10,8 @@ import android.net.NetworkRequest
 import android.os.IBinder
 import android.util.Log
 import com.andresuryana.amlib.core.IMessagingClient
+import com.andresuryana.amlib.core.di.CoreDependencies
 import com.andresuryana.amlib.logging.LogLevel.Companion.isLogLevelSupported
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -24,18 +24,15 @@ import java.util.LinkedList
 import java.util.Locale
 import java.util.Queue
 import java.util.TimeZone
-import javax.inject.Inject
 
 /**
  * A service that manages log operations, including handling log messages,
  * connecting to necessary services, and ensuring messages are processed and sent
  * according to network availability and other conditions.
  */
-@AndroidEntryPoint
 class LoggingService : Service() {
 
-    @Inject
-    lateinit var messageClient: IMessagingClient
+    private lateinit var messageClient: IMessagingClient
 
     private val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
     private var deviceId: String? = null
@@ -55,6 +52,10 @@ class LoggingService : Service() {
      */
     override fun onCreate() {
         super.onCreate()
+
+        // Initialize dependencies
+        messageClient = CoreDependencies.getInstance(context = this.applicationContext)
+            .provideIMessagingClient()
 
         // Register network callback to monitor connectivity changes
         registerNetworkCallback()
