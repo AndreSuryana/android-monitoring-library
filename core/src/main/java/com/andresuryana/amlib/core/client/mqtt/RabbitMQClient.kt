@@ -2,13 +2,16 @@ package com.andresuryana.amlib.core.client.mqtt
 
 import android.util.Log
 import com.andresuryana.amlib.core.IMessagingClient
+import com.andresuryana.amlib.core.client.mqtt.exception.MaxConnectionAttemptsException
 import com.andresuryana.amlib.core.listener.OnSubscribeTopicListener
 import com.rabbitmq.client.AMQP.BasicProperties
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.net.SocketTimeoutException
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
@@ -27,25 +30,35 @@ class RabbitMQClient(
 
     @Throws(Exception::class)
     override suspend fun connect() = withContext(Dispatchers.IO) {
-        // Initialize the connection and channel
-        lock.withLock {
-            if (connection == null || connection?.isOpen == false) {
-                Log.d(
-                    TAG,
-                    "Connecting to RabbitMQ server...\nHost: $host\nPort: $port\nUsername: $username\nPassword: $password\nExchange: $exchange"
-                )
-                connection = ConnectionFactory().apply {
-                    host = this@RabbitMQClient.host
-                    port = this@RabbitMQClient.port
-                    username = this@RabbitMQClient.username
-                    password = this@RabbitMQClient.password
-                }.newConnection()
+        Log.d(TAG, "Connecting to RabbitMQ server...\nHost: $host\nPort: $port\nUsername: $username\nPassword: $password\nExchange: $exchange")
+        if (connection == null || connection?.isOpen == false) {
+            val factory = ConnectionFactory().apply {
+                host = this@RabbitMQClient.host
+                port = this@RabbitMQClient.port
+                username = this@RabbitMQClient.username
+                password = this@RabbitMQClient.password
+                connectionTimeout = CONNECTION_TIMEOUT
+            }
 
-                channel = connection?.createChannel()?.apply {
-                    exchangeDeclare(exchange, "topic", true)
+            repeat(MAX_CONNECT_ATTEMPT) { attempt ->
+                try {
+                    lock.withLock {
+                        connection = factory.newConnection()
+                        channel = connection?.createChannel()?.apply {
+                            exchangeDeclare(exchange, "topic", true)
+                        }
+                        Log.i(TAG, "Successfully connected to RabbitMQ server.")
+                    }
+                    return@withContext
+                } catch (e: SocketTimeoutException) {
+                    Log.e(TAG, "Attempt ${attempt + 1} failed: ${e.message}")
+                    if (attempt == MAX_CONNECT_ATTEMPT - 1) {
+                        throw MaxConnectionAttemptsException("Max connection attempts reached.", e)
+                    }
+                    delay(RETRY_DELAY)
+                } catch (e: Exception) {
+                    Log.e(TAG, "General error: ${e.message}\n${Log.getStackTraceString(e)}")
                 }
-
-                Log.i(TAG, "Successfully connected to RabbitMQ server.")
             }
         }
     }
@@ -53,10 +66,7 @@ class RabbitMQClient(
     override suspend fun publish(topic: String, payload: String): Boolean =
         withContext(Dispatchers.IO) {
             if (channel == null) {
-                Log.e(
-                    TAG,
-                    "Failed to publish topic '${topic}' with payload '${payload}'. RabbitMQ channel is not initialized."
-                )
+                Log.e(TAG, "Failed to publish topic '${topic}' with payload '${payload}'. RabbitMQ channel is not initialized.")
                 return@withContext false
             }
 
@@ -139,5 +149,9 @@ class RabbitMQClient(
         private val TAG: String = RabbitMQClient::class.java.simpleName
 
         private const val DEFAULT_EXCHANGE_NAME = "libs.monitoring"
+
+        private const val CONNECTION_TIMEOUT = 30_000 // 30 seconds
+        private const val RETRY_DELAY = 5_000L // 5 seconds
+        private const val MAX_CONNECT_ATTEMPT = 3
     }
 }

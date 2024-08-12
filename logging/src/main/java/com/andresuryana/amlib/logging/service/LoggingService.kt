@@ -10,6 +10,7 @@ import android.net.NetworkRequest
 import android.os.IBinder
 import android.util.Log
 import com.andresuryana.amlib.core.IMessagingClient
+import com.andresuryana.amlib.core.client.mqtt.exception.MaxConnectionAttemptsException
 import com.andresuryana.amlib.core.di.CoreDependencies
 import com.andresuryana.amlib.logging.LogLevel.Companion.isLogLevelSupported
 import kotlinx.coroutines.CoroutineScope
@@ -118,8 +119,7 @@ class LoggingService : Service() {
      */
     override fun onDestroy() {
         super.onDestroy()
-        coroutineScope.cancel() // Cancel all coroutines when the service is destroyed
-        disconnectFromServer() // Disconnect from the server
+        gracefulShutdown()
     }
 
     /**
@@ -151,6 +151,9 @@ class LoggingService : Service() {
                 messageClient.connect() // Attempt to connect to the server
             }
             isConnected = true
+        } catch (e: MaxConnectionAttemptsException) {
+            Log.e(TAG, "Error connecting to server: ${e.message}\n${Log.getStackTraceString(e)}")
+            gracefulShutdown()
         } catch (e: Exception) {
             Log.e(TAG, "Error connecting to server: ${e.message}\n${Log.getStackTraceString(e)}")
         }
@@ -217,11 +220,11 @@ class LoggingService : Service() {
                 val routingKey = "log.$deviceId"
                 messageClient.publish(routingKey, compressLogs(batch))
                 success = true
+            } catch (e: MaxConnectionAttemptsException) {
+                Log.e(TAG,"Error publishing log batch: ${e.message}\n${Log.getStackTraceString(e)}")
+                gracefulShutdown()
             } catch (e: Exception) {
-                Log.e(
-                    TAG,
-                    "Error publishing log batch: ${e.message}\n${Log.getStackTraceString(e)}"
-                )
+                Log.e(TAG,"Error publishing log batch: ${e.message}\n${Log.getStackTraceString(e)}")
                 retryCount++
                 delay(RETRY_INTERVAL)
             }
@@ -252,6 +255,14 @@ class LoggingService : Service() {
             logs.forEach { writer.write(it); writer.write("\n") }
         }
         return output.toString("ISO-8859-1")
+    }
+
+    private fun gracefulShutdown() {
+        Log.d(TAG, "Shutting down gracefully...")
+        disconnectFromServer()
+        // TODO: Store the logs to local datastore
+        coroutineScope.cancel() // Cancel all coroutines when the service is destroyed
+        stopSelf()
     }
 
     /**
